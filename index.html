@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Document Verifier</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    input[type="file"] {
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 6px;
+      background: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>📄 Document Verifier</h2>
+    <input type="file" id="fileInput" />
+    <br />
+    <button onclick="storeDocument()">Save Document</button>
+    <button onclick="verifyDocument()">Verify Document</button>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxF7OuXhR1ATI993XHHZZBXC3mmdRPvJvnnljN5OlzfmBpVdhb_59Hn-tecdXerOGTy/exec"; // Replace with YOUR web app URL
+
+    async function getHash(file) {
+      const buffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function storeDocument() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Please select a file first.");
+
+      const hash = await getHash(file);
+      const url = `${scriptURL}?hash=${hash}&action=store`;
+
+      const response = await fetch(url);
+      const result = await response.text();
+      document.getElementById("status").innerText =
+        result === "stored" ? "✅ Document Stored!" :
+        result === "exists" ? "⚠️ Document Already Exists!" :
+        "❌ Error storing document.";
+    }
+
+    async function verifyDocument() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Please select a file first.");
+
+      const hash = await getHash(file);
+      const url = `${scriptURL}?hash=${hash}&action=verify`;
+
+      const response = await fetch(url);
+      const result = await response.text();
+      document.getElementById("status").innerText =
+        result === "exists" ? "✅ Document Verified!" :
+        result === "not found" ? "❌ Document NOT Found!" :
+        "❌ Error verifying document.";
+    }
+  </script>
+</body>
+</html>
